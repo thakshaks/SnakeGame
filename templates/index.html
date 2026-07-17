@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Game Arcade Server</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #00ffcc;
+            margin-bottom: 10px;
+        }
+
+        #menu {
+            margin-bottom: 20px;
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        button {
+            background: #00ffcc;
+            color: #1a1a1a;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: #00b38f;
+            transform: scale(1.05);
+        }
+
+        #gameContainer {
+            display: none; /* Hidden until a game starts */
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #scoreBoard {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+
+        canvas {
+            border: 4px solid #333;
+            background-color: #000;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Local Arcade Dashboard</h1>
+    
+    <div id="menu">
+        <p style="margin: 0 0 10px 0; text-align: center;">Select a standalone game to load:</p>
+        <button onclick="launchGame('snake')">Play Snake</button>
+        <button onclick="launchGame('pong')">Play Pong</button>
+    </div>
+
+    <div id="gameContainer">
+        <div id="scoreBoard">Score: <span id="score">0</span></div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+        const socket = io();
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const TILE_SIZE = 20; // Used for grid-based games like Snake
+
+        let activeGameType = null;
+
+        // 1. Tell Flask to launch a specific local script
+        function launchGame(gameName) {
+            socket.emit('start_game', { game: gameName });
+        }
+
+        // 2. Server confirms game has successfully instantiated
+        socket.on('game_started', (data) => {
+            activeGameType = data.game;
+            document.getElementById("gameContainer").style.display = "flex";
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Reset canvas view
+        });
+
+        // 3. Central Render Engine - reads whatever JSON the current local script sends
+        socket.on('game_update', (state) => {
+            // Update Scoreboard
+            document.getElementById("score").innerText = state.score;
+
+            // Handle Game Over
+            if (state.game_over) {
+                ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.font = "30px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("Game Over", canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Clear Screen before redrawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dynamically render based on which game script is active
+            if (state.game_type === 'snake') {
+                renderSnake(state);
+            } else if (state.game_type === 'pong') {
+                renderPong(state);
+            }
+        });
+
+        // --- SPECIFIC GAME RENDER LOGIC ---
+
+        function renderSnake(state) {
+            // Draw Food
+            ctx.fillStyle = "#ff4d4d";
+            ctx.fillRect(state.food[0] * TILE_SIZE, state.food[1] * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+
+            // Draw Snake
+            ctx.fillStyle = "#00ffcc";
+            state.snake.forEach((segment, index) => {
+                // Make the head a slightly different color
+                ctx.fillStyle = index === 0 ? "#00b38f" : "#00ffcc";
+                ctx.fillRect(segment[0] * TILE_SIZE, segment[1] * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+            });
+        }
+
+        function renderPong(state) {
+            // Example Placeholder if you build games/pong.py later
+            // Expects state to have paddle and ball coordinates
+            ctx.fillStyle = "white";
+            // Left Paddle
+            ctx.fillRect(10, state.left_y, 10, 60);
+            // Right Paddle
+            ctx.fillRect(canvas.width - 20, state.right_y, 10, 60);
+            // Ball
+            ctx.beginPath();
+            ctx.arc(state.ball_x, state.ball_y, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 4. Capture Keyboard inputs and send them generically to Flask
+        window.addEventListener("keydown", event => {
+            if (!activeGameType) return;
+
+            let payload = {};
+
+            // Map keys based on what game is running
+            if (activeGameType === 'snake') {
+                if (event.key === "ArrowUp") payload.direction = "UP";
+                if (event.key === "ArrowDown") payload.direction = "DOWN";
+                if (event.key === "ArrowLeft") payload.direction = "LEFT";
+                if (event.key === "ArrowRight") payload.direction = "RIGHT";
+            } 
+            
+            else if (activeGameType === 'pong') {
+                if (event.key === "w") payload.move = "UP";
+                if (event.key === "s") payload.move = "DOWN";
+            }
+
+            // Only send if a valid mapped key was pressed
+            if (Object.keys(payload).length > 0) {
+                socket.emit('game_input', payload);
+            }
+        });
+    </script>
+</body>
+</html>
