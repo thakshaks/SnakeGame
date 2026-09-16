@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Lobby</title>
+</head>
+<body>
+    <h1>Select a Game</h1>
+    <ul>
+        {% for game in games %}
+            <li><a href="{% url 'game_view' game_name=game %}">{{ game|capfirst }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

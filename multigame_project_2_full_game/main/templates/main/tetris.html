@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tetris Game</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #111; color: #fff; }
+        canvas { background: #000; border: 2px solid #555; margin-top: 10px; }
+        #score { font-size: 20px; margin-top: 10px; }
+        button { padding: 10px 20px; font-size: 16px; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Tetris</h1>
+    <button onclick="startGame()">Start Game</button>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="200" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const cols = 10;
+        const rows = 20;
+        const tileSize = canvas.width / cols;
+
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/game/tetris/`);
+
+        let pingInterval;
+        socket.onopen = function() {
+            pingInterval = setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ action: 'ping' }));
+                }
+            }, 10000);
+        };
+
+        socket.onclose = function() { clearInterval(pingInterval); };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (!data || data.type === 'pong') return;
+
+            if (data.score !== undefined) {
+                document.getElementById('score').innerText = `Score: ${data.score}`;
+            }
+            draw(data);
+        };
+
+        function startGame() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ action: 'start' }));
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const keyMap = {
+                'ArrowLeft': 'LEFT',
+                'ArrowRight': 'RIGHT',
+                'ArrowDown': 'DOWN',
+                'ArrowUp': 'ROTATE'
+            };
+            if (keyMap[e.key] && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ action: 'input', direction: keyMap[e.key] }));
+            }
+        });
+
+        function draw(state) {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Locked Board Blocks
+            if (state.board) {
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        if (state.board[r][c]) {
+                            ctx.fillStyle = '#00f0f0';
+                            ctx.fillRect(c * tileSize, r * tileSize, tileSize - 1, tileSize - 1);
+                        }
+                    }
+                }
+            }
+
+            // Draw Active Piece
+            if (state.current_piece) {
+                ctx.fillStyle = '#f0a000';
+                state.current_piece.forEach((row, rIdx) => {
+                    row.forEach((val, cIdx) => {
+                        if (val) {
+                            const x = (state.piece_x + cIdx) * tileSize;
+                            const y = (state.piece_y + rIdx) * tileSize;
+                            ctx.fillRect(x, y, tileSize - 1, tileSize - 1);
+                        }
+                    });
+                });
+            }
+
+            if (state.game_over) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+            }
+        }
+    </script>
+</body>
+</html>
