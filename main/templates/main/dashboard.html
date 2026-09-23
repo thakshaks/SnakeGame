@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: #fff; text-align: center; padding: 30px; }
+        .games-container { margin: 20px 0; }
+        .game-card { background: #333; display: inline-block; padding: 20px; margin: 10px; border-radius: 8px; width: 180px; }
+        .play-btn { display: inline-block; margin-top: 10px; padding: 8px 15px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; }
+        .leaderboard-section { display: flex; justify-content: center; gap: 40px; margin-top: 30px; }
+        .leaderboard-box { background: #333; padding: 20px; border-radius: 8px; width: 300px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #444; }
+        th { color: #28a745; }
+        .logout-btn { color: #ff4d4d; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Welcome, {{ user.username }}!</h1>
+    <p><a href="{% url 'logout' %}" class="logout-btn">Logout</a></p>
+
+    <h2>Select a Game</h2>
+    <div class="games-container">
+        <div class="game-card">
+            <h3>Snake</h3>
+            <p>Your Best: <strong>{{ user_snake_best }}</strong></p>
+            <a href="/game/snake/" class="play-btn">Play Snake</a>
+        </div>
+        <div class="game-card">
+            <h3>Tetris</h3>
+            <p>Your Best: <strong>{{ user_tetris_best }}</strong></p>
+            <a href="/game/tetris/" class="play-btn">Play Tetris</a>
+        </div>
+    </div>
+
+    <h2>Global Leaderboards</h2>
+    <div class="leaderboard-section">
+        <!-- Snake Leaderboard -->
+        <div class="leaderboard-box">
+            <h3>🐍 Snake Top 5</h3>
+            <table>
+                <tr><th>Player</th><th>Score</th></tr>
+                {% for entry in top_snake %}
+                <tr><td>{{ entry.user.username }}</td><td>{{ entry.score }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2">No scores logged yet.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <!-- Tetris Leaderboard -->
+        <div class="leaderboard-box">
+            <h3>🧩 Tetris Top 5</h3>
+            <table>
+                <tr><th>Player</th><th>Score</th></tr>
+                {% for entry in top_tetris %}
+                <tr><td>{{ entry.user.username }}</td><td>{{ entry.score }}</td></tr>
+                {% empty %}
+                <tr><td colspan="2">No scores logged yet.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</body>
+</html>

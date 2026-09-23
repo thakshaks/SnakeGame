@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - Game Platform</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: #fff; text-align: center; padding-top: 50px; }
+        .card { background: #333; display: inline-block; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-align: left; }
+        input { display: block; width: 100%; margin: 10px 0; padding: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; font-size: 16px; border-radius: 4px; }
+        a { color: #17a2b8; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div style="text-align:center;">
+        <div class="card">
+            <h2 style="text-align:center;">Create Account</h2>
+            <form method="POST">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Register</button>
+            </form>
+            <p style="text-align:center;">Already registered? <a href="{% url 'login' %}">Login here</a></p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snake Game</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
+        canvas { background: #000; border: 2px solid #fff; margin-top: 10px; }
+        #score { font-size: 20px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Snake Game</h1>
+    <button onclick="startGame()">Start Game</button>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gridSize = 20;
+        const tileSize = canvas.width / gridSize;
+        
+        const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+        const socket = new WebSocket(`${wsScheme}://${window.location.host}/ws/game/snake/`);
+        
+        let pingInterval;
+
+socket.onopen = function() {
+    console.log("WebSocket connected.");
+    // Send a keepalive ping every 10 seconds
+    pingInterval = setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ action: 'ping' }));
+        }
+    }, 10000);
+};
+
+socket.onclose = function(e) {
+    console.warn("WebSocket closed:", e);
+    clearInterval(pingInterval);
+};
+
+socket.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    if (!data || data.type === 'pong') return; // Ignore ping/pong frames
+
+    if (data.score !== undefined) {
+        document.getElementById('score').innerText = `Score: ${data.score}`;
+    }
+    draw(data);
+};
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (!data) return;
+
+            if (data.score !== undefined) {
+                document.getElementById('score').innerText = `Score: ${data.score}`;
+            }
+            draw(data);
+        };
+
+        function startGame() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ action: 'start' }));
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const keyMap = {
+                'ArrowUp': 'UP',
+                'ArrowDown': 'DOWN',
+                'ArrowLeft': 'LEFT',
+                'ArrowRight': 'RIGHT'
+            };
+            if (keyMap[e.key] && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ action: 'input', direction: keyMap[e.key] }));
+            }
+        });
+
+        function draw(state) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Food
+            if (state.food) {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(state.food.x * tileSize, state.food.y * tileSize, tileSize - 1, tileSize - 1);
+            }
+
+            // Draw Snake
+            if (state.snake) {
+                state.snake.forEach((part, idx) => {
+                    ctx.fillStyle = (idx === 0) ? 'limegreen' : 'green';
+                    ctx.fillRect(part.x * tileSize, part.y * tileSize, tileSize - 1, tileSize - 1);
+                });
+            }
+
+            // Game Over Text
+            if (state.game_over) {
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Arial';
+                ctx.fillText('Game Over', 120, 200);
+            }
+        }
+    </script>
+</body>
+</html>

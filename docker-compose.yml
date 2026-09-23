@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: game_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: django_web_server
+    command: daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+
+  snake_engine:
+    build:
+      context: ./snake_engine
+      dockerfile: Dockerfile.game
+    container_name: snake_game_engine
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+
+  tetris_engine:
+    build:
+      context: ./tetris_engine
+      dockerfile: Dockerfile.game
+    container_name: tetris_game_engine
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis

@@ -1,0 +1,36 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Channels Key Tracker</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; max-width: 600px; margin: auto; }
+        .card { border: 1px solid #ccc; padding: 1rem; border-radius: 8px; margin-top: 1rem; }
+        .status { font-weight: bold; padding: 4px 8px; border-radius: 4px; }
+        .online { background-color: #d4edda; color: #155724; }
+        .offline { background-color: #f8d7da; color: #721c24; }
+        #log { list-style: none; padding: 0; max-height: 150px; overflow-y: auto; }
+        #log li { padding: 4px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>Django Channels Keystroke Monitor</h1>
+
+    <p>Connection: <span id="status-badge" class="status offline">Disconnected</span></p>
+
+    <div class="card">
+        <h3>Last Pressed Key (Received from Python):</h3>
+        <p id="display-key" style="font-size: 2.5rem; font-weight: bold; margin: 0; color: #007bff;">-</p>
+    </div>
+
+    <p>Total keystrokes processed by server: <strong id="total-count">0</strong></p>
+
+    <h3>Activity Stream</h3>
+    <ul id="log"></ul>
+
+    <!-- External JavaScript File -->
+    <script src="{% static 'main/js/websocket.js' %}"></script>
+</body>
+</html>
