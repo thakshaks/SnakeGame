@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snake-engine-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snake-engine
+  template:
+    metadata:
+      labels:
+        app: snake-engine
+    spec:
+      containers:
+      - name: snake-engine
+        image: thakshak12/snake-engine:latest
+        env:
+        - name: REDIS_HOST
+          value: "redis"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tetris-engine-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tetris-engine
+  template:
+    metadata:
+      labels:
+        app: tetris-engine
+    spec:
+      containers:
+      - name: tetris-engine
+        image: thakshak12/tetris-engine:latest
+        env:
+        - name: REDIS_HOST
+          value: "redis"

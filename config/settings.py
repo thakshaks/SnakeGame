@@ -61,7 +61,7 @@ TEMPLATES = [
 # Set Daphne/Channels as the main ASGI application
 ASGI_APPLICATION = 'config.asgi.application'
 
-# In-Memory Channel Layer (Use Redis for multi-worker production)
+# In-Memory Channel Layer 
 CHANNEL_LAYERS = {
     'default': {
         "BACKEND": "channels.layers.InMemoryChannelLayer",

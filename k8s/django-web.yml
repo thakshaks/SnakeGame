@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-web-deployment
+spec:
+  replicas: 2 # Scale web replicas as needed
+  selector:
+    matchLabels:
+      app: django-web
+  template:
+    metadata:
+      labels:
+        app: django-web
+    spec:
+      # Run migrations automatically before web pods start
+      initContainers:
+      - name: run-migrations
+        image: thakshak12/django-web:latest
+        command: ["python", "manage.py", "migrate"]
+        env:
+        - name: REDIS_HOST
+          value: "redis"
+        - name: DJANGO_SETTINGS_MODULE
+          value: "config.settings"
+      containers:
+      - name: django-web
+        image: thakshak12/django-web:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: REDIS_HOST
+          value: "redis"
+        - name: DJANGO_SETTINGS_MODULE
+          value: "config.settings"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-web-service
+spec:
+  type: NodePort # Exposes port externally for local testing
+  selector:
+    app: django-web
+  ports:
+  - port: 8000
+    targetPort: 8000
+    nodePort: 30080
